@@ -1,6 +1,9 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <chrono>
+#include <windows.h>
+#include <psapi.h>
 
 // Estrutura 2: Árvore binária com cada nó tendo o número em si e a sua posição numa matriz
 
@@ -268,6 +271,12 @@ TreeNode* generateSparseMatrix(int n, double sparsity) {
   return root;
 }
 
+SIZE_T getMemoryUseKB() {
+    PROCESS_MEMORY_COUNTERS pmc;
+    GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+    return pmc.WorkingSetSize / 1024; // KB
+}
+
 
 
 int main() {
@@ -277,21 +286,31 @@ int main() {
   double sparsity = 0.1;
 
   TreeNode* a = generateSparseMatrix(n, sparsity);
-  // TreeNode* b = generateSparseMatrix(n, sparsity);
+  TreeNode* b = generateSparseMatrix(n, sparsity);
 
   bool transpose_a = false;
-  // bool transpose_b = false;
+  bool transpose_b = false;
 
   std::cout << "Matriz A:" << "\n";
   printTree(a, transpose_a);
   
-  // std::cout << "Matriz B:" << "\n";
-  // printTree(b, transpose_b);
+  std::cout << "Matriz B:" << "\n";
+  printTree(b, transpose_b);
 
-  // TreeNode* ABMult = multMatrices(a, b, transpose_a, transpose_b);
-  // std::cout << "Resultado multiplicacao de matrizes" << "\n";
-  // printTree(ABMult, false);
+  auto startMM = std::chrono::high_resolution_clock::now();
+  SIZE_T MM_mem_start = getMemoryUseKB();
+
+  TreeNode* ABMult = multMatrices(a, b, transpose_a, transpose_b);
+  std::cout << "Resultado multiplicacao de matrizes" << "\n";
+  printTree(ABMult, false);
   
+  SIZE_T MM_mem_end = getMemoryUseKB();
+  auto endMM = std::chrono::high_resolution_clock::now();
+
+  std::chrono::duration<double> multMatricesTime = endMM - startMM;
+  std::cout << "Multiplicacao de matrizes " << n << "x" << n <<" com esparsidade " << sparsity * 100 << "%" << "\n"; 
+  std::cout << "Tempo: " << multMatricesTime.count() << "s\n";
+  std::cout << "Memória: " << MM_mem_end - MM_mem_start;
   // TreeNode* ABSum = sumMatrices(a, b, transpose_a, transpose_b);
   // std::cout << "Resultado soma matrizes:" << "\n";
   // printTree(ABSum, false);
