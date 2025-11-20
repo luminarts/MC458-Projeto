@@ -1,37 +1,24 @@
-#include <iostream>
-#include <vector>
-#include <chrono>
-#include <windows.h>
-#include <psapi.h>
+#include "SparseMatrixTree.h"
 
-#include "DenseMatrix.h"
-#include "SparseMatrixHash.h"
+#include <iostream>
 
 // Estrutura 2: Árvore binária com cada nó tendo o número em si e a sua posição numa matriz
 
 // CHECK FINAL
-enum Color { RED, BLACK };
+// (Color enum is in header)
 
 // CHECK FINAL
-struct TreeNode {
-  int value;
-  int row, column;
-
-  Color color;
-  TreeNode *left, *right, *parent;
-
-  TreeNode(int v = 0, int rw = 0, int col = 0, Color clr = BLACK, TreeNode *l = nullptr, TreeNode *r = nullptr,
-           TreeNode *p = nullptr) : value(v), row(rw), column(col), color(clr), left(l), right(r), parent(p) {
-  };
-
-  ~TreeNode() {
-    delete(left);
-    delete(right);
-  }
+SparseMatrixTree::TreeNode::TreeNode(int v, int rw, int col, Color clr, TreeNode *l, TreeNode *r, TreeNode *p)
+  : value(v), row(rw), column(col), color(clr), left(l), right(r), parent(p) {
 };
 
+SparseMatrixTree::TreeNode::~TreeNode() {
+  delete(left);
+  delete(right);
+}
+
 // CHECK FINAL
-bool isLessThan(int i1, int j1, int i2, int j2) {
+bool SparseMatrixTree::isLessThan(int i1, int j1, int i2, int j2) {
   if (i1 < i2) {
     return true;
   } else if (i1 == i2) {
@@ -44,22 +31,22 @@ bool isLessThan(int i1, int j1, int i2, int j2) {
 
 // Funções da árvore rubro-negra (IMPLEMENTAR LEFT E RIGHT ROTATIONS)
 
-bool isRed(TreeNode *node) {
+bool SparseMatrixTree::isRed(const TreeNode *node) {
   if (node == nullptr) {
     return false;
   }
   return node->color == RED;
 }
 
-bool isBlack(TreeNode *node) {
+bool SparseMatrixTree::isBlack(const TreeNode *node) {
   if (node == nullptr) {
-    return 1;
-  } else {
-    return node->color == BLACK;
+    return true;
   }
+
+  return node->color == BLACK;
 }
 
-TreeNode *rotateLeft(TreeNode *root) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::rotateLeft(TreeNode *root) {
   TreeNode *node = root->right;
   root->right = node->left;
   node->left = root;
@@ -68,7 +55,7 @@ TreeNode *rotateLeft(TreeNode *root) {
   return node;
 }
 
-TreeNode *rotateRight(TreeNode *root) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::rotateRight(TreeNode *root) {
   TreeNode *node = root->left;
   root->left = node->right;
   node->right = root;
@@ -77,15 +64,15 @@ TreeNode *rotateRight(TreeNode *root) {
   return node;
 }
 
-void riseRed(TreeNode *root) {
+void SparseMatrixTree::riseRed(TreeNode *root) {
   root->color = RED;
   root->left->color = BLACK;
   root->right->color = BLACK;
 }
 
-TreeNode *insertRBTree(TreeNode *root, int i, int j, int valueToInsert) {
-  TreeNode *node = nullptr;
+SparseMatrixTree::TreeNode *SparseMatrixTree::insertRBTree(TreeNode *root, int i, int j, int valueToInsert) {
   if (root == nullptr) {
+    TreeNode *node = nullptr;
     node = new TreeNode(valueToInsert, i, j, RED);
     return node;
   }
@@ -110,7 +97,7 @@ TreeNode *insertRBTree(TreeNode *root, int i, int j, int valueToInsert) {
   return root;
 }
 
-TreeNode *insert(TreeNode *root, int i, int j, int valueToInsert) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::insert(TreeNode *root, int i, int j, int valueToInsert) {
   root = insertRBTree(root, i, j, valueToInsert);
   root->color = BLACK;
   return root;
@@ -120,7 +107,7 @@ TreeNode *insert(TreeNode *root, int i, int j, int valueToInsert) {
 // Funções para matriz (ADAPTAR TUDO PRA TER ARVORE RUBRO-NEGRA)
 
 // CHECK - NÃO PRECISA DE ADAPTAÇÃO PRA RUBRONEGRA
-TreeNode *findElement(TreeNode *node, int i, int j, bool transpose) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::findElement(TreeNode *node, int i, int j, bool transpose) {
   while (node) {
     int nodeRow = transpose ? node->column : node->row;
     int nodeColumn = transpose ? node->row : node->column;
@@ -140,7 +127,7 @@ TreeNode *findElement(TreeNode *node, int i, int j, bool transpose) {
 }
 
 // CHECK - NÃO PRECISA DE ADAPTAÇÃO PRA RUBRONEGRA
-void inorderGet(TreeNode *root, bool transpose, std::vector<TreeNode *> &resultingTreeVec) {
+void SparseMatrixTree::inorderGet(TreeNode *root, bool transpose, std::vector<TreeNode *> &resultingTreeVec) {
   if (!root) {
     return;
   }
@@ -150,7 +137,8 @@ void inorderGet(TreeNode *root, bool transpose, std::vector<TreeNode *> &resulti
   inorderGet(root->right, transpose, resultingTreeVec);
 }
 
-TreeNode *sumMatrices(TreeNode *root_a, TreeNode *root_b, bool transpose_a, bool transpose_b) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::sumMatrices(TreeNode *root_a, TreeNode *root_b, bool transpose_a,
+                                                          bool transpose_b) {
   std::vector<TreeNode *> a, b;
 
   inorderGet(root_a, transpose_a, a);
@@ -198,7 +186,7 @@ TreeNode *sumMatrices(TreeNode *root_a, TreeNode *root_b, bool transpose_a, bool
 }
 
 // NÃO PRECISA DE ADAPTAÇÃO PRA RUBRONEGRA
-void multScalarMatrix(TreeNode *root, int multiplier) {
+void SparseMatrixTree::multScalarMatrix(TreeNode *root, int multiplier) {
   if (!root) {
     return;
   }
@@ -207,10 +195,8 @@ void multScalarMatrix(TreeNode *root, int multiplier) {
   multScalarMatrix(root->right, multiplier);
 }
 
-TreeNode *auxMultMatrices(TreeNode *node, int i, int j, int val) {
-  TreeNode *n = findElement(node, i, j, false);
-
-  if (n) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::auxMultMatrices(TreeNode *node, int i, int j, int val) {
+  if (TreeNode *n = findElement(node, i, j, false)) {
     n->value += val;
     return node;
   }
@@ -220,7 +206,8 @@ TreeNode *auxMultMatrices(TreeNode *node, int i, int j, int val) {
 
 // NÃO PRECISA DE ADAPTAÇÃO PRA RUBRONEGRA
 // PRECISA IMPLEMENTAR MULTIPLICAÇÃO
-TreeNode *multMatrices(TreeNode *root_a, TreeNode *root_b, bool transpose_a, bool transpose_b) {
+SparseMatrixTree::TreeNode *SparseMatrixTree::multMatrices(TreeNode *root_a, TreeNode *root_b, bool transpose_a,
+                                                           bool transpose_b) {
   std::vector<TreeNode *> a, b;
   inorderGet(root_a, transpose_a, a);
   inorderGet(root_b, transpose_b, b);
@@ -247,7 +234,7 @@ TreeNode *multMatrices(TreeNode *root_a, TreeNode *root_b, bool transpose_a, boo
   return result;
 }
 
-void printTree(TreeNode *root, bool transpose) {
+void SparseMatrixTree::printTree(const TreeNode *root, bool transpose) {
   if (!root) {
     return;
   }
@@ -256,95 +243,4 @@ void printTree(TreeNode *root, bool transpose) {
   int nodeColumn = transpose ? root->row : root->column;
   std::cout << "(" << nodeRow << ", " << nodeColumn << ") = " << root->value << std::endl;
   printTree(root->right, transpose);
-}
-
-TreeNode *generateSparseMatrix(int n, double sparsity) {
-  TreeNode *root = nullptr;
-
-  int nonZeros = (int) (n * n * sparsity);
-
-  for (int k = 0; k < nonZeros; k++) {
-    int i = rand() % n;
-    int j = rand() % n;
-    int val = (rand() % 9) + 1;
-
-    root = insert(root, i, j, val);
-  }
-  return root;
-}
-
-SIZE_T getMemoryUseKB() {
-  PROCESS_MEMORY_COUNTERS pmc;
-  GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
-  return pmc.WorkingSetSize / 1024; // KB
-}
-
-DenseMatrix generateDenseMatrix(const int n, const double sparsity) {
-  DenseMatrix M(n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      if (const double r = static_cast<double>(rand()) / RAND_MAX; r < sparsity) {
-        const double value = rand() % 9 + 1;
-        M.set(i, j, value);
-      }
-    }
-  }
-
-  return M;
-}
-
-SparseMatrixHash generateSparseMatrixHash(const int n, const double sparsity) {
-  SparseMatrixHash M(n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      if (const double r = static_cast<double>(rand()) / RAND_MAX; r < sparsity) {
-        const double value = rand() % 9 + 1;
-        M.set(i, j, value);
-      }
-    }
-  }
-
-  return M;
-}
-
-int main() {
-  srand(20); // setar a seed pra ter reproducibilidade
-
-  int n = 10;
-  double sparsity = 0.1;
-
-  TreeNode *a = generateSparseMatrix(n, sparsity);
-  TreeNode *b = generateSparseMatrix(n, sparsity);
-
-  bool transpose_a = false;
-  bool transpose_b = false;
-
-  std::cout << "Matriz A:" << "\n";
-  printTree(a, transpose_a);
-
-  std::cout << "Matriz B:" << "\n";
-  printTree(b, transpose_b);
-
-  auto startMM = std::chrono::high_resolution_clock::now();
-  SIZE_T MM_mem_start = getMemoryUseKB();
-
-  TreeNode *ABMult = multMatrices(a, b, transpose_a, transpose_b);
-  std::cout << "Resultado multiplicacao de matrizes" << "\n";
-  printTree(ABMult, false);
-
-  SIZE_T MM_mem_end = getMemoryUseKB();
-  auto endMM = std::chrono::high_resolution_clock::now();
-
-  std::chrono::duration<double> multMatricesTime = endMM - startMM;
-  std::cout << "Multiplicacao de matrizes " << n << "x" << n << " com esparsidade " << sparsity * 100 << "%" << "\n";
-  std::cout << "Tempo: " << multMatricesTime.count() << "s\n";
-  std::cout << "Memória: " << MM_mem_end - MM_mem_start;
-  // TreeNode* ABSum = sumMatrices(a, b, transpose_a, transpose_b);
-  // std::cout << "Resultado soma matrizes:" << "\n";
-  // printTree(ABSum, false);
-
-  // int scalar = 5;
-  // multScalarMatrix(a, scalar);
-  // std::cout << "Resultado multiplicacao escalar:" << "\n";
-  // printTree(a, transpose_a);
 }

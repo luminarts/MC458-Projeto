@@ -1,7 +1,3 @@
-//
-// Created by victo on 20/11/2025.
-//
-
 #ifndef MC458_PROJETO_DENSEMATRIX_H
 #define MC458_PROJETO_DENSEMATRIX_H
 #include <vector>
