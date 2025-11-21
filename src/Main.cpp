@@ -18,42 +18,42 @@ SIZE_T getMemoryUseKB() {
   return pmc.WorkingSetSize / 1024;
 }
 
-SparseMatrixTree::TreeNode *generateSparseMatrixTree(const int n, const double sparsity) {
+SparseMatrixTree::TreeNode *generateSparseMatrixTree(const int n, const long long k_expected) {
   SparseMatrixTree::TreeNode *root = nullptr;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      if (const double r = static_cast<double>(rand()) / RAND_MAX; r < sparsity) {
-        const int value = (rand() % 9) + 1;
-        root = SparseMatrixTree::insert(root, i, j, value);
-      }
-    }
+
+  for (long long count = 0; count < k_expected; count++) {
+    const int i = rand() % n;
+    const int j = rand() % n;
+    const int value = (rand() % 9) + 1;
+    root = SparseMatrixTree::insert(root, i, j, value);
   }
+
   return root;
 }
 
-SparseMatrixHash generateSparseMatrixHash(const int n, const double sparsity) {
+SparseMatrixHash generateSparseMatrixHash(const int n, const long long k_expected) {
   SparseMatrixHash M(n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      if (const double r = static_cast<double>(rand()) / RAND_MAX; r < sparsity) {
-        const double value = (rand() % 9) + 1;
-        M.set(i, j, value);
-      }
-    }
+
+  for (long long count = 0; count < k_expected; count++) {
+    const int i = rand() % n;
+    const int j = rand() % n;
+    const double value = (rand() % 9) + 1;
+    M.set(i, j, value);
   }
+
   return M;
 }
 
-DenseMatrix generateDenseMatrix(int n, double sparsity) {
+DenseMatrix generateDenseMatrix(const int n, const long long k_expected) {
   DenseMatrix M(n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      if (const double r = static_cast<double>(rand()) / RAND_MAX; r < sparsity) {
-        const double value = (rand() % 9) + 1;
-        M.set(i, j, value);
-      }
-    }
+
+  for (long long count = 0; count < k_expected; count++) {
+    const int i = rand() % n;
+    const int j = rand() % n;
+    const double value = (rand() % 9) + 1;
+    M.set(i, j, value);
   }
+
   return M;
 }
 
@@ -78,7 +78,7 @@ BenchmarkResult benchmark(Func func) {
   return {time_ms, memory_kb};
 }
 
-void SparseMatrixHashTest(const int n, const double sparsity, std::ofstream &csv_file, const int k_expected) {
+void SparseMatrixHashTest(const int n, const double sparsity, std::ofstream &csv_file, const long long k_expected) {
   std::cout << "\n--- Estrutura 1 (E1): Hash Map ---\n";
 
   SparseMatrixHash hash_a(n, n);
@@ -86,7 +86,7 @@ void SparseMatrixHashTest(const int n, const double sparsity, std::ofstream &csv
 
   // Geração
   auto result = benchmark([&]() {
-    hash_a = generateSparseMatrixHash(n, sparsity);
+    hash_a = generateSparseMatrixHash(n, k_expected);
   });
   std::cout << "Geracao: " << result.time_ms << " ms, Mem: " << result.memory_kb << " KB\n";
   csv_file << "Hash,Geracao," << n << "," << (sparsity * 100) << "," << k_expected << ","
@@ -145,7 +145,7 @@ void SparseMatrixHashTest(const int n, const double sparsity, std::ofstream &csv
       << result.time_ms << ",0\n";
 
   // Soma
-  hash_b = generateSparseMatrixHash(n, sparsity);
+  hash_b = generateSparseMatrixHash(n, k_expected);
   SparseMatrixHash hash_sum(n, n);
   result = benchmark([&]() {
     hash_sum = hash_a.add(hash_b);
@@ -173,7 +173,7 @@ void SparseMatrixHashTest(const int n, const double sparsity, std::ofstream &csv
       << result.time_ms << "," << result.memory_kb << "\n";
 }
 
-void SparseMatrixTreeTest(const int n, const double sparsity, std::ofstream &csv_file, const int k_expected) {
+void SparseMatrixTreeTest(const int n, const double sparsity, std::ofstream &csv_file, const long long k_expected) {
   std::cout << "\n--- Estrutura 2 (E2): Red-Black Tree ---\n";
 
   SparseMatrixTree::TreeNode *tree_a = nullptr;
@@ -181,7 +181,7 @@ void SparseMatrixTreeTest(const int n, const double sparsity, std::ofstream &csv
 
   // Geração
   auto result = benchmark([&]() {
-    tree_a = generateSparseMatrixTree(n, sparsity);
+    tree_a = generateSparseMatrixTree(n, k_expected);
   });
   std::cout << "Geracao: " << result.time_ms << " ms, Mem: " << result.memory_kb << " KB\n";
   csv_file << "Tree,Geracao," << n << "," << (sparsity * 100) << "," << k_expected << ","
@@ -242,7 +242,7 @@ void SparseMatrixTreeTest(const int n, const double sparsity, std::ofstream &csv
       << result.time_ms << ",0\n";
 
   // Soma
-  tree_b = generateSparseMatrixTree(n, sparsity);
+  tree_b = generateSparseMatrixTree(n, k_expected);
   SparseMatrixTree::TreeNode *tree_sum = nullptr;
   result = benchmark([&]() {
     tree_sum = SparseMatrixTree::sumMatrices(tree_a, tree_b, false, false);
@@ -276,7 +276,20 @@ void SparseMatrixTreeTest(const int n, const double sparsity, std::ofstream &csv
   delete tree_sum;
 }
 
-void DenseMatrixTest(const int n, const double sparsity, std::ofstream &csv_file, const int k_expected) {
+void DenseMatrixTest(const int n, const double sparsity, std::ofstream &csv_file, const long long k_expected) {
+  if (n > 10000) {
+    std::cout << "\n--- Matriz Densa (baseline) ---\n";
+    std::cout << "SKIPPED (n > 10000, impractical for dense matrices)\n";
+    csv_file << "Dense,Geracao," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    csv_file << "Dense,AcessoAleatorio," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    csv_file << "Dense,Insercao," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    csv_file << "Dense,Transposta," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    csv_file << "Dense,Soma," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    csv_file << "Dense,MultEscalar," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    csv_file << "Dense,MultMatrizes," << n << "," << (sparsity * 100) << "," << k_expected << ",-1,0\n";
+    return;
+  }
+
   std::cout << "\n--- Matriz Densa (baseline) ---\n";
 
   DenseMatrix dense_a(n, n);
@@ -284,7 +297,7 @@ void DenseMatrixTest(const int n, const double sparsity, std::ofstream &csv_file
 
   // Geração
   auto result = benchmark([&]() {
-    dense_a = generateDenseMatrix(n, sparsity);
+    dense_a = generateDenseMatrix(n, k_expected);
   });
   std::cout << "Geracao: " << result.time_ms << " ms, Mem: " << result.memory_kb << " KB\n";
   csv_file << "Dense,Geracao," << n << "," << (sparsity * 100) << "," << k_expected << ","
@@ -323,7 +336,7 @@ void DenseMatrixTest(const int n, const double sparsity, std::ofstream &csv_file
       << result.time_ms << ",0\n";
 
   // Soma
-  dense_b = generateDenseMatrix(n, sparsity);
+  dense_b = generateDenseMatrix(n, k_expected);
   DenseMatrix dense_sum(n, n);
   result = benchmark([&]() {
     dense_sum = dense_a.add(dense_b);
@@ -342,21 +355,29 @@ void DenseMatrixTest(const int n, const double sparsity, std::ofstream &csv_file
       << result.time_ms << ",0\n";
 
   // Multiplicação de matrizes
-  DenseMatrix dense_mult(n, n);
-  result = benchmark([&]() {
-    dense_mult = dense_a.mult(dense_b);
-  });
-  std::cout << "Mult Matrizes: " << result.time_ms << " ms\n";
-  csv_file << "Dense,MultMatrizes," << n << "," << (sparsity * 100) << "," << k_expected << ","
-      << result.time_ms << ",0\n";
+  if (n <= 1000) {
+    // Only run for small matrices
+    DenseMatrix dense_mult(n, n);
+    result = benchmark([&]() {
+      dense_mult = dense_a.mult(dense_b);
+    });
+    std::cout << "Mult Matrizes: " << result.time_ms << " ms\n";
+    csv_file << "Dense,MultMatrizes," << n << "," << (sparsity * 100) << ","
+        << k_expected << "," << result.time_ms << ",0\n";
+  } else {
+    std::cout << "Mult Matrizes: SKIPPED (too large)\n";
+    csv_file << "Dense,MultMatrizes," << n << "," << (sparsity * 100) << ","
+        << k_expected << ",-1,0\n";
+  }
 }
 
 int main() {
+  srand(20);
+
   std::ofstream csv_file("resultados.csv");
   csv_file << "Estrutura,Operacao,N,Esparsidade(%),K_Nao_Nulos,Tempo(ms),Memoria(KB)\n";
 
-  // const std::vector dimensions = {100, 1000, 10000, 100000, 1000000};
-  const std::vector dimensions = {100, 1000, 10000};
+  const std::vector dimensions = {100, 1000, 10000, 100000, 1000000};
 
   for (const int n: dimensions) {
     std::vector<double> sparsities;
@@ -372,14 +393,12 @@ int main() {
     }
 
     for (const double sparsity: sparsities) {
-      const int k_expected = static_cast<int>(n * n * sparsity);
+      const long long k_expected = static_cast<long long>(n) * static_cast<long long>(n) * sparsity;
 
       std::cout << "\n========================================\n";
       std::cout << "N = " << n << ", Esparsidade = " << std::fixed
           << std::setprecision(6) << (sparsity * 100) << "%, k = " << k_expected << "\n";
       std::cout << "========================================\n";
-
-      srand(20);
 
       SparseMatrixHashTest(n, sparsity, csv_file, k_expected);
 
